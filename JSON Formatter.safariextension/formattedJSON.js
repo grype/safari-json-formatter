@@ -105,13 +105,7 @@
       } else if( Object.prototype.toString.call( obj ) === "[object Array]" ) {
         return "array";
       } else {
-				var objType = typeof obj;
-				if(objType == 'string') {
-					if (obj.match(/(^[^:]+\:\/+)|(^\/+[a-z0-9\-\_]+)/)) {
-						return "urlString";
-					}
-				}
-        return objType;
+        return typeof obj;
       }
     },
 
@@ -241,53 +235,41 @@
 
       if( collapsible ) { class_names.push( "collapsible" ); }
       if( collapsed ) { class_names.push( "closed" ); }
+      
+      var url = null;
+      if (settings.decorate_links) {
+        var objString = ""+obj;
+        if (objString.match(/(^[^:]+\:\/+)|(^\/+[a-z0-9\-\_]+)/)) {
+          if (obj[0] == "/") {
+            url = document.location.protocol + "//" + document.location.host + objString;
+          }
+          else {
+            url = objString;
+          }
+        }
+      }
+      
+      var objNode = null;
+      if (url) {
+        objNode = document.createElement("a");
+        objNode.href = url;
+        objNode.appendChild(document.createTextNode( obj ));
+      }
+      else {
+        objNode = document.createTextNode( obj );
+      }
 
       return this._append(
         this._html( '<div class="' + class_names.join( " " ) + '"/>' ),
           this._html(
             collapsible ? '<span class="disclosure"></span>' : '',
             '<span class="decorator">"</span>',
-            this._append( this._html( '<span class="value"/>' ), document.createTextNode( obj ) ),
+            this._append( this._html( '<span class="value"/>' ), objNode ),
             '<span class="decorator">"</span>',
             '<span class="separator">,</span>'
           )
         );
     },
-		
-		/**
-		* render a javascript string as URL
-		*/
-		renderURL: function( obj ) {
-			var url = ""+obj;
-			if (url[0] == "/") {
-				url = document.location+url;
-			}
-		  var collapsible = obj.length > parseInt( settings.long_string_length, 10 ),
-		      collapsed = collapsible && settings.fold_strings,
-		      class_names = ["string"];
-
-		  if( collapsible ) { class_names.push( "collapsible" ); }
-		  if( collapsed ) { class_names.push( "closed" ); }
-			
-			var a = document.createTextNode(obj);
-			if (settings.decorate_links) {
-				var b = document.createElement('a');
-				b.href = url;
-				b.appendChild(a);
-				a = b;
-			}
-
-		  return this._append(
-		    this._html( '<div class="' + class_names.join( " " ) + '"/>' ),
-		      this._html(
-		        collapsible ? '<span class="disclosure"></span>' : '',
-		        '<span class="decorator">"</span>',
-		        this._append( this._html( '<span class="value"/>' ), a ),
-		        '<span class="decorator">"</span>',
-		        '<span class="separator">,</span>'
-		      )
-		    );
-		},
 
     /**
      * render a literal value as HTML
@@ -308,7 +290,6 @@
         case "array":  return this.renderArray( obj );
         case "object": return this.renderObject( obj );
         case "string": return this.renderString( obj );
-				case "urlString": return this.renderURL( obj );
         case "boolean":
         case "null":
         case "number":
